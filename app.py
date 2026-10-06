@@ -30,13 +30,14 @@ class Category:
      if not self.assignments:
          return None
      total_earned = sum(a.earned_points for a in self.assignments)
-     total_possible = sum(a.possible_points for a in self.assigments)
+     total_possible = sum(a.possible_points for a in self.assignments)
      return (total_earned / total_possible) * 100.0
 
 class Subject:
     def __init__(self, name:str):
         self.name = name
-        self.categories[name] = Dict[str, Category] = {}
+        self.categories: Dict[str, Category] = {}
+
     def add_category(self, name: str, weight: float) -> None:
         if weight < 0 or weight > 100:
             raise ValueError("Weight must be between 0 and 100.")
@@ -46,6 +47,11 @@ class Subject:
         # Returns True if category weights sum to 100%.
         total_weight = sum(cat.weight for cat in self.categories.values())
         return abs(total_weight - 100.0) < 1e-5
+
+    def add_grade(self, category_name: str, assignment_name: str, earned: float, possible: float) -> None:
+        if category_name not in self.categories:
+            raise KeyError(f"Category '{category_name}' does not exist in {self.name}.")
+        self.categories[category_name].add_assignment(assignment_name, earned, possible)
 
     def calculate_overall_grade(self) -> Dict[str, float]:
         # Calculates the subject's overall grade using active categories.
@@ -132,7 +138,7 @@ if __name__ == "__main__":
 
     # 1. Setup AP Calculus BC
     calc = manager.add_subject("AP Calculus BC")
-    calc.add_catergory("Tests", 60.0)
+    calc.add_category("Tests", 60.0)
     calc.add_category("Quizzes", 25.0)
     calc.add_category("Homework", 15.0)
 
@@ -153,13 +159,13 @@ if __name__ == "__main__":
     # Output Single Subject Analysis
     print("---Multi-Subject Summary ---")
     for name, subj in manager.subjects.items():
-        score = subj.calculate_overall()["overall_percentage"]
+        score = subj.calculate_overall_grade()["overall_percentage"]
         letter = GradeManager.percentage_to_letter(score)
         print(f"{name}: {score}% ({letter})")
 
     print(f"\nCalculated GPA: {manager.calculate_gpa()}")
 
-    
+
 
 
         
