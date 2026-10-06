@@ -255,7 +255,7 @@ if current_exact_avg is not None:
 with tab_bounds:
     st.write("Calculate the maximum possible grade floor and ceiling given upcoming total assignment weights.")
 
-    future_pts = st.number_input("Total Remaining Points to be Graded in Class:", min_value=1.0, vlue=100.0, step=10.0)
+    future_pts = st.number_input("Total Remaining Points to be Graded in Class:", min_value=1.0, value=100.0, step=10.0)
     bound_cat = st.selectbox("Category for Remaining Points:", list(course_data["categories"].keys()), key="bound_cat")
 
     if st.button("Calculate Grade Boundaries"):
@@ -273,3 +273,41 @@ with tab_bounds:
 
         worst_w_sum = sum((worst_totals[c]["earned"] / worst_totals[c]["possible"] * 100.0) * (w / 100.0) for c, w in course_data["categories"].items() if best_totals[c]["possible"] > 0)
         worst_avg = worst_w_sum / (active_weight / 100.0)
+
+        st.markdown("---")
+        b_col1, b_col2, b_col3 = st.columns(3)
+        b_col1.metric("Current Average", f"{current_exact_avg:.2f}%")
+        b_col2.metric("Worst Case Floor (0%)", f"{worst_avg:.2f}%", f"{worst_avg - current_exact_avg:.2f}%")
+        b_col3.metric("Best Case Ceiling (100%)", f"{best_avg:.2f}%", f"+{best_avg - current_exact_avg:.2f}%")
+
+        st.caption("Grade Range Potential:")
+        st.progress(min(max(int(best_avg), 0), 100))
+#________________________________________________________________________________________________________________________________________________________________________________________________________________________
+# Tab 3: Single Test Quick Simulator:
+#____________________________________________________________________________________________________________________________________________________________________________________________________________________________________-
+with tab_sim:
+    st.write("Test how a custom grade entry impacts your overall standing before logging it.")
+    sim_col1, sim_col2, sim_col3 = st.columns(3)
+
+    with sim_col1:
+        sim_cat = st.selectbox("Category:", list(course_data["categories"].keys()), key="sim_c")
+    with sim_col2:
+        sim_earned = st.number_input("Hypothetical Points Earned:", min_value=0.0, value=88.0, step=1.0)
+    with sim_col3:
+        sim_possible = st.number_input("Hypothetical Total Points:", min_value=1.0, value=100.0, step=1.0)
+
+    if st.button("Run Simulation"):
+        temp_totals = {c: {"earned": cat_totals[c]["earned"], "possible": cat_totals[c]['possible']} for c in cat_totals}
+        temp_totals[sim_cat]["earned"] += sim_earned
+        temp_totals[sim_cat]["possible"] += sim_possible
+
+        sim_weighted_sum = sum((temp_totals[c]["earned"] / temp_totals[c]["possible"] * 100.0) * (w / 100.0) for c, w in course_data["categories"].items() if temp_totals[c]["possible"] > 0)
+        sim_final_avg = sim_weighted_sum / (active_weight_sum / 100.0)
+        diff = sim_final_avg - current_exact_avg
+
+        if diff >= 0:
+            st.success(f"Simualted Class Average: **{sim_final_avg:.2f}%** (+{diff:.2f})")
+        else:
+            st.error(f"Simulated Class Average: **{sim_final_avg:.2f}%** ({diff:.2f}% change)")
+    else:
+        st.info("Log at least one assignment in Section 2 to unlock analytics and target calculators.")
